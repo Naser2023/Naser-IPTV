@@ -37,14 +37,14 @@ jobs:
           test -f source/settings.gradle.kts
           test -f source/app/build.gradle.kts
 
-      - name: Align Java and Kotlin JVM targets
+      - name: Patch Android build compatibility
         working-directory: source
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path("app/build.gradle.kts")
-          s = p.read_text()
-          marker = "    compileSdk = 35\n"
+          build = Path("app/build.gradle.kts")
+          s = build.read_text()
+          marker = "    compileSdk = 35\\n"
           block = marker + """    compileOptions {
                   sourceCompatibility = JavaVersion.VERSION_17
                   targetCompatibility = JavaVersion.VERSION_17
@@ -52,9 +52,23 @@ jobs:
           """
           if "sourceCompatibility = JavaVersion.VERSION_17" not in s:
               if marker not in s:
-                  raise SystemExit("Could not find compileSdk declaration in app/build.gradle.kts")
+                  raise SystemExit("Could not find compileSdk declaration")
               s = s.replace(marker, block, 1)
-              p.write_text(s)
+              build.write_text(s)
+
+          main = Path("app/src/main/java/com/naser/iptv/MainActivity.kt")
+          s = main.read_text()
+          s = s.replace("override fun getItemId(position: Int) = position",
+                        "override fun getItemId(position: Int): Long = position.toLong()")
+          main.write_text(s)
+
+          player = Path("app/src/main/java/com/naser/iptv/PlayerActivity.kt")
+          s = player.read_text()
+          s = s.replace(
+              "import com.google.android.exoplayer2.trackselection.TrackSelectionDialogBuilder",
+              "import com.google.android.exoplayer2.ui.TrackSelectionDialogBuilder"
+          )
+          player.write_text(s)
           PY
 
       - name: Build debug APK
