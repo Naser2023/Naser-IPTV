@@ -42,19 +42,25 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
+
           build = Path("app/build.gradle.kts")
           s = build.read_text()
-          marker = "    compileSdk = 35\\n"
-          block = marker + """    compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-          """
           if "sourceCompatibility = JavaVersion.VERSION_17" not in s:
-              if marker not in s:
-                  raise SystemExit("Could not find compileSdk declaration")
-              s = s.replace(marker, block, 1)
-              build.write_text(s)
+              s, count = re.subn(
+                  r"(\s*compileSdk\s*=\s*35\s*\n)",
+                  r'\1    compileOptions {\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }\n',
+                  s, count=1
+              )
+              if count != 1:
+                  raise SystemExit("Could not locate compileSdk line in app/build.gradle.kts")
+          if 'kotlinOptions { jvmTarget = "17" }' not in s:
+              s = s.replace(
+                  "    defaultConfig {",
+                  '    kotlinOptions { jvmTarget = "17" }\n    defaultConfig {',
+                  1
+              )
+          build.write_text(s)
 
           main = Path("app/src/main/java/com/naser/iptv/MainActivity.kt")
           s = main.read_text()
