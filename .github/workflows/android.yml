@@ -74,6 +74,14 @@ jobs:
               "import com.google.android.exoplayer2.trackselection.TrackSelectionDialogBuilder",
               "import com.google.android.exoplayer2.ui.TrackSelectionDialogBuilder"
           )
+          s = s.replace(
+              "TrackSelectionDialogBuilder(this, title, trackSelector, renderer)",
+              "TrackSelectionDialogBuilder(this, title, exo, renderer)"
+          )
+          s = s.replace(
+              "            .setShowDisableOption(trackType == C.TRACK_TYPE_TEXT)\n",
+              ""
+          )
           player.write_text(s)
           PY
 
